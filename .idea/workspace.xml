@@ -51,11 +51,12 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "<unknown>",
-    "last_opened_file_path": "C:/sdd_venv"
+    "last_opened_file_path": "C:/Users/tarcisio.b.prates/OneDrive - Accenture/python-broadcast"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\tarcisio.b.prates\OneDrive - Accenture\python-broadcast" />
       <recent name="C:\cloud\OneDrive - aluno.cefetmg.br\python broadcast\pythonProject1\sources" />
     </key>
   </component>
@@ -100,13 +101,5 @@
       <updated>1752111711691</updated>
     </task>
     <servers />
-  </component>
-  <component name="XDebuggerManager">
-    <watches-manager>
-      <configuration name="PythonConfigurationType">
-        <watch expression="self.apps[app]" />
-        <watch expression="os.path.exists(self.apps['path'])" />
-      </configuration>
-    </watches-manager>
   </component>
 </project>

@@ -115,16 +115,27 @@ class InstallApp:
         if not os.path.exists(python_path):
             raise "UNABLE TO CREATE VENV"
 
-        cmd =  f".\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt"
-        print("\n\n", cmd, "\n\n", self.apps[self.appName]["path"], "\n\n\n")
-        self.__updateText("INSTALLING REQUIREMENTS")
-        result = subprocess.run([
-           cmd, '--no-cache-dir', '--no-build-isolation'],
-            cwd=self.apps[self.appName]["path"],
-            capture_output=True, text=True)
+        venv_python = os.path.join(self.apps[self.appName]["path"], ".venv", "Scripts", "python.exe")
+        venv_python = os.path.abspath(venv_python)
 
-        print("INSTALLING | STDOUT:\n", result.stdout)
-        print("INSTALLING | STDERR:\n", result.stderr)
+        req_path = os.path.join(self.apps[self.appName]["path"], "requirements.txt")
+
+        with open(req_path, "r", encoding="utf-16") as file:
+            packages = [line.strip() for line in file if line.strip() and not line.startswith("#")]
+
+        for pkg in packages:
+            self.__updateText("INSTALLING " + str(pkg))
+            result = subprocess.run(
+                [venv_python, "-m", "pip", "install", pkg, "--no-cache-dir", "--no-build-isolation"],
+                cwd=self.apps[self.appName]["path"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0:
+                print(f"❌ Failed to install {pkg}")
+                print("STDERR:\n", result.stderr)
+            else:
+                print(f"✅ Successfully installed {pkg}")
 
 
     def remove_temp(self):
@@ -166,4 +177,5 @@ class InstallApp:
         except:
             self.remove_temp()
             self.__updateText("OCORREU UM ERRO")
+            print(traceback.format_exc())
             self.storage.code_log(f"\n\n------------------------DATE:{datetime.now().strftime('%d.%m.%y %H:%M:%S')}\nCONTENT:{traceback.format_exc()}")

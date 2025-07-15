@@ -225,6 +225,10 @@ class App:
             pymsgbox.alert("Already proccess is running", "ERROR")
             return
 
+        if not 'RSA_PUB_PATH' in self.config:
+            pymsgbox.alert("RSA PUB not found", "ERROR")
+            return
+
         self.func = build_app.BuildApp()
 
         appName = self.homePage.appName.text()

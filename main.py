@@ -149,26 +149,27 @@ class App:
         self.homePage.scrollArea.setWidgetResizable(True)
         self.homePage.verticalLayout_21.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        for app in self.apps:
+        for app_name in self.apps:
 
+            if os.path.exists(self.apps[app_name]['path']):
 
-            appWidget = app_widget.Ui_Form()
-            widget = QtWidgets.QWidget()
-            appWidget.setupUi(widget)
+                appWidget = app_widget.Ui_Form()
+                widget = QtWidgets.QWidget()
+                appWidget.setupUi(widget)
 
-            appWidget.app_name.setText('<html><head/><body><p align="center"><span style=" font-size:11pt; font-weight:600; color:#ffffff;">'+str(app)+'</span></p></body></html>')
+                appWidget.app_name.setText('<html><head/><body><p align="center"><span style=" font-size:11pt; font-weight:600; color:#ffffff;">'+str(app)+'</span></p></body></html>')
 
-            app_icon = QtGui.QIcon()
-            app_icon.addPixmap(QtGui.QPixmap(self.apps[app]['icon']), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-            appWidget.icon_app.setIcon(app_icon)
+                app_icon = QtGui.QIcon()
+                app_icon.addPixmap(QtGui.QPixmap(self.apps[app_name]['icon']), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+                appWidget.icon_app.setIcon(app_icon)
 
-            appWidget.run_btn.clicked.connect(lambda state, script=app: self.__run_app(script))
-            appWidget.delete_btn.clicked.connect(lambda state, script=app: self.__remove_app(script))
-            appWidget.info_btn.clicked.connect(lambda state, script=app: self.__info_app(script))
-            if "app_color" in self.apps[app]:
-                appWidget.widget_20.setStyleSheet(f"background-color: {self.apps[app]['app_color']};")
+                appWidget.run_btn.clicked.connect(lambda state, script=app_name: self.__run_app(script))
+                appWidget.delete_btn.clicked.connect(lambda state, script=app_name: self.__remove_app(script))
+                appWidget.info_btn.clicked.connect(lambda state, script=app_name: self.__info_app(script))
+                if "app_color" in self.apps[app_name]:
+                    appWidget.widget_20.setStyleSheet(f"background-color: {self.apps[app_name]['app_color']};")
 
-            self.homePage.verticalLayout_21.addWidget(widget)
+                self.homePage.verticalLayout_21.addWidget(widget)
 
 
 

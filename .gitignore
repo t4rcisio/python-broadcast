@@ -1,0 +1,18 @@
+# Ignorar arquivos de chave RSA
+*.pem
+*.key
+*.rsa
+id_rsa
+id_rsa.pub
+
+# Ignorar arquivos pickle
+*.pkl
+*.pickle
+
+# Pasta .ssh (comum para chaves)
+.ssh/
+
+# Outros comuns (opcional)
+__pycache__/
+*.pyc
+.env

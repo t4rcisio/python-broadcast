@@ -1,0 +1,8 @@
+{
+  "app_name": "Agent Studio",
+  "app_file": "agent studio.py",
+  "app_icon": "icons\\logo.png",
+  "args": "",
+  "author": "tarcisio.b.prates",
+  "version": "1.0.0"
+}

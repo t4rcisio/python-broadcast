@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>432</width>
+    <width>550</width>
     <height>683</height>
    </rect>
   </property>
   <property name="maximumSize">
    <size>
-    <width>450</width>
+    <width>550</width>
     <height>16777215</height>
    </size>
   </property>
@@ -243,8 +243,8 @@ QPushButton:hover {
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>414</width>
-                  <height>438</height>
+                  <width>532</width>
+                  <height>434</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_21"/>
@@ -604,7 +604,7 @@ color:rgb(0, 0, 0)
                 </size>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600; color:#ffffff;&quot;&gt;PRIVATE RSA&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600; color:#ffffff;&quot;&gt;RSA INSTALLER&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
               </widget>
              </item>
@@ -648,7 +648,7 @@ color: rgb(34, 40, 49);
                 </size>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600; color:#ffffff;&quot;&gt;PUBLIC RSA&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600; color:#ffffff;&quot;&gt;RSA BUILDER&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
               </widget>
              </item>

@@ -2,6 +2,13 @@ import os
 from filelock import FileLock
 import pickle
 
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
+import base64
+
 class Storage:
 
     def __init__(self):
@@ -13,6 +20,8 @@ class Storage:
 
         self.logFile = self.root + "\\logs.pickle"
         self.codeLog = self.root + "\\code_log.pickle"
+
+        self.fileKey = "cnjdTRE#$%¨&(*UOIJNJ@#*RVFDXW#$FRXwxcyokmlpGEXRSW$#W%E&THUOIYR"
 
     def config(self, data=None):
 
@@ -47,14 +56,17 @@ class Storage:
 
                     with open(path, "wb") as file:
 
-                        pickle.dump(data, file)
+                        enc_data = self.__encrypt_string(str(data), self.fileKey)
+                        pickle.dump(enc_data, file)
 
                 else:
 
                     with open(path, "rb") as file:
-                        res = pickle.load(file)
-
-                        return res
+                        res = self.__decrypt_string(pickle.load(file), self.fileKey)
+                        try:
+                            return eval(res)
+                        except:
+                            return res
         except:
             return None
 
@@ -64,3 +76,48 @@ class Storage:
             os.mkdir(path)
         except:
             pass
+
+
+    def __derive_key(self, password, salt):
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+            backend=default_backend()
+        )
+        return kdf.derive(password.encode())
+
+    def __encrypt_string(self, plaintext, password):
+
+        salt = os.urandom(16)
+        key = self.__derive_key(password, salt)
+        iv = os.urandom(16)
+
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+        encryptor = cipher.encryptor()
+
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(plaintext.encode()) + padder.finalize()
+
+        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+
+        return base64.b64encode(salt + iv + ciphertext).decode()
+
+    def __decrypt_string(self, ciphertext, password):
+
+        decoded_data = base64.b64decode(ciphertext)
+        salt = decoded_data[:16]
+        iv = decoded_data[16:32]
+        ciphertext = decoded_data[32:]
+
+        key = self.__derive_key(password, salt)
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+
+        padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+
+        unpadder = padding.PKCS7(128).unpadder()
+        plaintext = unpadder.update(padded_data) + unpadder.finalize()
+
+        return plaintext.decode()

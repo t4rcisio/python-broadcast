@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime
 
@@ -35,15 +36,14 @@ class InstallApp:
         with zipfile.ZipFile(caminho_zip, 'r') as zip_ref:
             zip_ref.extractall(pasta_destino)
 
-    def uncrypt_rsa(self, arquivo_cripto, chave_priv_path):
+    def uncrypt_rsa(self, arquivo_cripto, rsa_key):
         with open(arquivo_cripto, 'rb') as f:
             tamanho_chave = int.from_bytes(f.read(4), 'big')
             chave_aes_cripto = f.read(tamanho_chave)
             iv = f.read(16)
             dados_cripto = f.read()
 
-        with open(chave_priv_path, 'rb') as f:
-            rsa_key = RSA.import_key(f.read())
+        rsa_key = RSA.import_key(rsa_key)
 
         cipher_rsa = PKCS1_OAEP.new(rsa_key)
         chave_aes = cipher_rsa.decrypt(chave_aes_cripto)
@@ -101,19 +101,22 @@ class InstallApp:
         self.__updateText("CREATING VENV")
         python_path = self.apps[self.appName]["path"] + "\.venv\\Scripts\\python.exe"
 
-        result = subprocess.run(
-            ['python', '-m', 'venv', '.venv'],
-            cwd=self.apps[self.appName]["path"],
-            capture_output=True,
-            text=True
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, '-m', 'venv', '.venv'],
+                cwd=self.apps[self.appName]["path"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            print("Virtual environment created successfully!")
 
-        print("CREATING VENV | STDOUT:\n", result.stdout)
-        print("CREATING VENV | STDERR:\n", result.stderr)
-        print("CREATING VENV | Return code:", result.returncode)
-
-        if not os.path.exists(python_path):
+        except subprocess.CalledProcessError as e:
+            print("ERROR: Failed to create virtual environment.")
+            text = f"Return Code: {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}"
+            self.storage.code_log( f"\n\n------------------------DATE:{datetime.now().strftime('%d.%m.%y %H:%M:%S')}\nCONTENT:{text}")
             raise "UNABLE TO CREATE VENV"
+
 
         venv_python = os.path.join(self.apps[self.appName]["path"], ".venv", "Scripts", "python.exe")
         venv_python = os.path.abspath(venv_python)
@@ -123,19 +126,27 @@ class InstallApp:
         with open(req_path, "r", encoding="utf-16") as file:
             packages = [line.strip() for line in file if line.strip() and not line.startswith("#")]
 
+        index = 0
         for pkg in packages:
-            self.__updateText("INSTALLING " + str(pkg))
+
+            index +=1
+
+            perce = round((index/len(packages))*100, 2)
+            self.__updateText(f"INSTALLING {pkg} | {perce}%")
+
             result = subprocess.run(
-                [venv_python, "-m", "pip", "install", pkg, "--no-cache-dir", "--no-build-isolation"],
+                [venv_python, "-m", "pip", "install", pkg],
                 cwd=self.apps[self.appName]["path"],
                 capture_output=True,
                 text=True
             )
             if result.returncode != 0:
-                print(f"❌ Failed to install {pkg}")
-                print("STDERR:\n", result.stderr)
+                text = f"❌ Failed to install {pkg}\nSTDERR:\n{result.stderr}"
+                self.storage.code_log(f"\n\n------------------------DATE:{datetime.now().strftime('%d.%m.%y %H:%M:%S')}\nCONTENT:{text}")
+                raise "FAILED TO INSTALL PKG"
             else:
-                print(f"✅ Successfully installed {pkg}")
+                text = f"✅ Successfully installed {pkg}\nSTDERR:\n{result.stdout}"
+                self.storage.code_log(f"\n\n------------------------DATE:{datetime.now().strftime('%d.%m.%y %H:%M:%S')}\nCONTENT:{text}")
 
 
     def remove_temp(self):
@@ -171,8 +182,6 @@ class InstallApp:
             self.remove_temp()
 
             self.__updateText("BUILD COMPLETED")
-
-            print("okok")
 
         except:
             self.remove_temp()

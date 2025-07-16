@@ -67,7 +67,7 @@ class BuildApp:
         encryptor = cipher.encryptor()
         return encryptor.update(padded_data) + encryptor.finalize()
 
-    def crypt_zip_rsa(self, zip_file, pub_key_path):
+    def crypt_zip_rsa(self, zip_file, rsa_key):
 
         # Gerar chave e IV aleatórios
         aes_key = token_bytes(32)  # AES-256
@@ -76,11 +76,9 @@ class BuildApp:
         with open(zip_file, 'rb') as f:
             dados_zip = f.read()
 
-        encrypted_data = self.crypt_key_aes(dados_zip, aes_key, iv)
+        rsa_key = RSA.import_key(rsa_key)
 
-        # Carregar chave pública e criptografar a chave AES
-        with open(pub_key_path, 'rb') as f:
-            rsa_key = RSA.import_key(f.read())
+        encrypted_data = self.crypt_key_aes(dados_zip, aes_key, iv)
 
         cipher_rsa = PKCS1_OAEP.new(rsa_key)
         aes_key_encrypted = cipher_rsa.encrypt(aes_key)

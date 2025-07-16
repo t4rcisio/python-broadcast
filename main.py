@@ -7,13 +7,15 @@ from datetime import datetime
 import pymsgbox
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import QFileSystemWatcher, Qt
-from PyQt6.QtGui import QMovie
+from PyQt6.QtGui import QMovie, QIcon
 from PyQt6.QtWidgets import QFileDialog
 
 from pages import home_page, app_widget
 from q_threads import q_thread
-from services import database, security, build_app, install_app
+from services import database, security, build_app, install_app, start_app
 
+
+APP_ICON = ".\\sources\\app.png"
 
 class App:
 
@@ -40,7 +42,7 @@ class App:
             self.connections()
 
             icon2 = QtGui.QIcon()
-            icon2.addPixmap(QtGui.QPixmap(".\\sources\\app.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+            icon2.addPixmap(QtGui.QPixmap(APP_ICON), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
             self.Form.setWindowIcon(icon2)
             self.Form.setWindowTitle("PYTHON BROADCAST")
             self.Form.show()
@@ -54,6 +56,12 @@ class App:
             pymsgbox.alert(traceback.format_exc(), "ERROR")
 
     def connections(self):
+
+        self.config = self.storage.config()
+        if not isinstance(self.config, dict):
+            self.config = {}
+            self.storage.config({})
+
 
         self.homePage.generateBtn.clicked.connect(lambda state: self.__generateKeys())
 
@@ -98,9 +106,13 @@ class App:
 
         if 'RSA_PUB_PATH' in self.config:
             self.homePage.public_rsa.setText(self.__rsaText(self.config['RSA_PUB_PATH']))
+        else:
+            self.config['RSA_PUB_PATH'] = False
 
         if 'RSA_PRIV_PATH' in self.config:
             self.homePage.private_rsa.setText(self.__rsaText(self.config['RSA_PRIV_PATH']))
+        else:
+            self.config['RSA_PRIV_PATH'] = False
 
         self.homePage.public_rsa.setCursorPosition(0)
         self.homePage.private_rsa.setCursorPosition(0)
@@ -140,6 +152,8 @@ class App:
 
         self.apps = self.storage.apps()
 
+        self.clear_layout(self.homePage.verticalLayout_21)
+
         if not isinstance(self.apps, dict):
             self.apps = {}
             self.storage.apps({})
@@ -157,7 +171,7 @@ class App:
                 widget = QtWidgets.QWidget()
                 appWidget.setupUi(widget)
 
-                appWidget.app_name.setText('<html><head/><body><p align="center"><span style=" font-size:11pt; font-weight:600; color:#ffffff;">'+str(app)+'</span></p></body></html>')
+                appWidget.app_name.setText('<html><head/><body><p align="center"><span style=" font-size:11pt; font-weight:600; color:#ffffff;">'+str(app_name)+'</span></p></body></html>')
 
                 app_icon = QtGui.QIcon()
                 app_icon.addPixmap(QtGui.QPixmap(self.apps[app_name]['icon']), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
@@ -171,17 +185,74 @@ class App:
 
                 self.homePage.verticalLayout_21.addWidget(widget)
 
+    def clear_layout(self, layout):
+        while layout.count() > 0:
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                if item.layout() is not None:
+                    self.clear_layout(item.layout())
+
+    def __run_app(self, app_name):
+
+        self.func = start_app.StartApp()
+
+        params = {
+            "app_name": app_name,
+        }
+
+        payload = {
+            "FX": self.func.run,
+            "DATA": params
+        }
+
+        self.is_running = "RUNNING"
+
+        self.qThread = q_thread.ThreadService()
+        self.qThread.startThread(payload, self.__start, self.__end, self.__update)
+
+        self.storage.projects(self.projects)
 
 
-    def __run_app(self, name):
-        print(name)
+    def __msgQuestion(self, title, text):
+
+        msg_box = QtWidgets.QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        icon = QIcon(APP_ICON)
+        msg_box.setWindowIcon(icon)
+        msg_box.setStandardButtons(
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
+        msg_box.setStyleSheet(
+            "color: white; background-color: rgb(237, 86, 88); font-size: 16px; font-weight: bold;")
+
+        reply = msg_box.exec()
+
+        return True if reply == QtWidgets.QMessageBox.StandardButton.Yes else False
 
     def __remove_app(self, name):
-        print(name)
+
+        self.apps = self.storage.apps()
+
+        reply = self.__msgQuestion("ALERT", "DO YOU WANT TO REMOVE THIS APP?")
+
+        if reply:
+
+            try:
+                shutil.rmtree(self.apps[name]['path'])
+                pymsgbox.alert("REMOVED SUCCESSFULLY", "NOTICE")
+                self.loadApps()
+            except:
+                pymsgbox.alert("APP REMOVED SUCCESSFULLY", "NOTICE")
+                self.storage.code_log(f"\n\n------------------------DATE:{datetime.now().strftime('%d.%m.%y %H:%M:%S')}\nCONTENT:{traceback.format_exc()}")
 
     def __info_app(self, name):
-        print(name)
 
+        self.apps = self.storage.apps()
+        text = f"APP NAME: {name}\nVERSION: {self.apps[name]['version']}\nAUTHOR: {self.apps[name]['author']}\nDIR: {self.apps[name]['path']}"
+        pymsgbox.alert(text, "INFO")
 
     def __install_app(self):
 
@@ -191,7 +262,7 @@ class App:
             pymsgbox.alert("Select path to app", "ERROR")
             return
 
-        if not os.path.exists(self.config['RSA_PUB_PATH']):
+        if not self.config['RSA_PRIV_PATH']:
             pymsgbox.alert("RSA builder not found", "ERROR")
             return
 
@@ -245,7 +316,7 @@ class App:
             pymsgbox.alert("Select output folder", "ERROR")
             return
 
-        if not os.path.exists(self.config['RSA_PUB_PATH']):
+        if not self.config['RSA_PUB_PATH']:
             pymsgbox.alert("RSA builder not found", "ERROR")
             return
 
@@ -307,6 +378,7 @@ class App:
         self.is_running = False
         self.__updateText('COMPLETED')
         self.__update()
+        self.loadApps()
 
     def updateLog(self):
 
@@ -317,8 +389,9 @@ class App:
     def __updateText(self, text):
 
         logs = self.storage.logs()
-        logs += "\n"+ str(datetime.now().strftime("%d.%m.%y %H:%M:%S")) + "\t------> "+str(text)
-        self.storage.logs(logs)
+        if logs != None:
+            logs += "\n"+ str(datetime.now().strftime("%d.%m.%y %H:%M:%S")) + "\t------> "+str(text)
+            self.storage.logs(logs)
 
     def __projectForm(self, index):
 
@@ -365,17 +438,24 @@ class App:
         if not path_file:
             return
 
+        self.config = self.storage.config()
+
+        data = open(path_file, "r", encoding="UTF-8").read()
+
+        if not security.is_valid_rsa_key(data):
+            pymsgbox.alert("CAN'T VALIDATE KEY", "ERROR")
+            return
+
         if "RSA_PUB_PATH" == option:
-             dst = self.storage.root + "\\public.pem"
+             self.config['RSA_PUB_PATH'] = data
         else:
-            dst = self.storage.root + "\\private.pem"
+            self.config['RSA_PRIV_PATH'] = data
 
-        shutil.copy(path_file, dst)
 
-        self.config[option] = dst
         self.__init_form()
+        self.storage.config(self.config)
 
-        pymsgbox.alert("PROCESS COMPLETED", "COMPLETED")
+        pymsgbox.alert("PROCESS COMPLETED", "NOTICE")
 
 
     def __exportRSA(self):
@@ -385,13 +465,11 @@ class App:
         if not pasta:
             return
 
-        dst = pasta +"\\"+ os.path.basename(self.config['RSA_PUB_PATH'])
-        shutil.copy(self.config['RSA_PUB_PATH'], dst)
-
-        dst = pasta + "\\" + os.path.basename(self.config['RSA_PRIV_PATH'])
-        shutil.copy(self.config['RSA_PRIV_PATH'], dst)
-
-        pymsgbox.alert("PROCESS COMPLETED", "COMPLETED")
+        try:
+            security.export_rsa(pasta, self.config['RSA_PRIV_PATH'], self.config['RSA_PUB_PATH'])
+            pymsgbox.alert("PROCESS COMPLETED", "COMPLETED")
+        except:
+            pymsgbox.alert("FAILED TO EXPORT KEYS", "ERROR")
 
     def __get_folder_file(self, dest_widget: QtWidgets.QLineEdit = False, file=False, filter=None):
 
@@ -409,9 +487,7 @@ class App:
         else:
             return path
 
-    def __rsaText(self, path):
-
-        data = open(path, "r", encoding="UTF-8").read()
+    def __rsaText(self, data):
         return data[:10] + "•" * len(data[10:])
 
 
@@ -419,16 +495,12 @@ class App:
 
         self.config = self.storage.config()
 
-        self.config['RSA_PUB_PATH'] = self.storage.root + "\\public.pem"
-        self.config['RSA_PRIV_PATH'] = self.storage.root + "\\private.pem"
+        self.config['RSA_PUB_PATH'] = False
+        self.config['RSA_PRIV_PATH'] = False
 
-        for path in [self.config['RSA_PRIV_PATH'], self.config['RSA_PUB_PATH']]:
-            if os.path.exists(path):
-                os.remove(path)
+        self.config['RSA_PUB_PATH'], self.config['RSA_PRIV_PATH'] = security.gen_rsa_keys()
 
-        response = security.gen_rsa_keys(self.config['RSA_PUB_PATH'], self.config['RSA_PRIV_PATH'])
-
-        if response:
+        if self.config['RSA_PUB_PATH'] != False and self.config['RSA_PRIV_PATH'] != False:
             pymsgbox.alert("RSA KEYS CREATED SUCCESSFULLY", "SUCCESS")
 
             self.homePage.private_rsa.setText(self.__rsaText(self.config['RSA_PRIV_PATH']))
@@ -438,8 +510,7 @@ class App:
         else:
             pymsgbox.alert("AN ERROR OCCURRED WHILE CREATING RSA KEYS", "ERROR")
 
-
-
+        self.storage.config(self.config)
 
 
 if __name__ == '__main__':

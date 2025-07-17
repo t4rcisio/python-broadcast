@@ -119,6 +119,8 @@ class App:
 
 
         self.projects = self.storage.projects()
+        self.process = []
+        self.process_running = {}
 
         if not isinstance(self.projects, dict):
             self.projects = {}
@@ -197,22 +199,21 @@ class App:
 
     def __run_app(self, app_name):
 
-        self.func = start_app.StartApp()
+        self.process.append({
+            "CLASSE": start_app.StartApp(),
+            "TH": q_thread.ThreadService()
+        })
 
         params = {
             "app_name": app_name,
         }
 
         payload = {
-            "FX": self.func.run,
+            "FX": self.process[-1]["CLASSE"].run,
             "DATA": params
         }
 
-        self.is_running = "RUNNING"
-
-        self.qThread = q_thread.ThreadService()
-        self.qThread.startThread(payload, self.__start, self.__end, self.__update)
-
+        self.process[-1]["TH"].startThread(payload, self.__start, self.__end, self.__update)
         self.storage.projects(self.projects)
 
 
@@ -256,8 +257,6 @@ class App:
 
     def __install_app(self):
 
-        self.func = install_app.InstallApp()
-
         if not os.path.exists(self.homePage.path_input.text()):
             pymsgbox.alert("Select path to app", "ERROR")
             return
@@ -275,17 +274,19 @@ class App:
             pymsgbox.alert("COMPLETE ALL FIELDS", "ERROR")
             return
 
+        self.process.append({
+            "CLASSE": install_app.InstallApp(),
+            "TH": q_thread.ThreadService()
+        })
+
         payload = {
-            "FX": self.func.run,
+            "FX": self.process[-1]["CLASSE"].run,
             "DATA": params
         }
 
         self.is_running = "INSTALL"
 
-
-        self.qThread = q_thread.ThreadService()
-        self.qThread.startThread(payload, self.__start, self.__end, self.__update)
-
+        self.process[-1]["TH"].startThread(payload, self.__start, self.__end, self.__update)
         self.storage.projects(self.projects)
 
 
@@ -299,8 +300,6 @@ class App:
         if not 'RSA_PUB_PATH' in self.config:
             pymsgbox.alert("RSA PUB not found", "ERROR")
             return
-
-        self.func = build_app.BuildApp()
 
         appName = self.homePage.appName.text()
 
@@ -325,6 +324,8 @@ class App:
             comp_mode = "PRECOMPILE"
 
 
+
+
         params = {
             "APP_NAME": appName,
             "SOURCE_PATH": self.homePage.appFolder.text(),
@@ -340,16 +341,19 @@ class App:
             pymsgbox.alert("COMPLETE ALL FIELDS", "ERROR")
             return
 
+        self.process.append({
+            "CLASSE": build_app.BuildApp(),
+            "TH": q_thread.ThreadService()
+        })
+
         payload = {
-            "FX": self.func.build,
+            "FX": self.process[-1]["CLASSE"].build,
             "DATA": params
         }
 
         self.is_running = "BUILD"
 
-        self.qThread = q_thread.ThreadService()
-        self.qThread.startThread(payload, self.__start, self.__end, self.__update)
-
+        self.process[-1]["TH"].startThread(payload, self.__start, self.__end, self.__update)
         self.storage.projects(self.projects)
 
 
@@ -498,7 +502,7 @@ class App:
         self.config['RSA_PUB_PATH'] = False
         self.config['RSA_PRIV_PATH'] = False
 
-        self.config['RSA_PUB_PATH'], self.config['RSA_PRIV_PATH'] = security.gen_rsa_keys()
+        self.config['RSA_PRIV_PATH'], self.config['RSA_PUB_PATH'] = security.gen_rsa_keys()
 
         if self.config['RSA_PUB_PATH'] != False and self.config['RSA_PRIV_PATH'] != False:
             pymsgbox.alert("RSA KEYS CREATED SUCCESSFULLY", "SUCCESS")
